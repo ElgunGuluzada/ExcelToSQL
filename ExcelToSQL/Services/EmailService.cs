@@ -25,7 +25,7 @@ namespace ExcelToSQL.Services
             mail.Body = message;
             mail.IsBodyHtml = true;
             SmtpClient client = new SmtpClient();
-            client.Credentials = new System.Net.NetworkCredential(_config.GetSection("ConfirmationParameter:Email").Value, _config.GetSection("ConfirmationParameter8:Password").Value);
+            client.Credentials = new System.Net.NetworkCredential(_config.GetSection("ConfirmationParameter:Email").Value, _config.GetSection("ConfirmationParameter:Password").Value);
 
             client.Host = "smtp.gmail.com";
             client.Port = 587;

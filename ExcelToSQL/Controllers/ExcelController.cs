@@ -1,13 +1,10 @@
-﻿using Aspose.Cells;
-using ExcelToSQL.DATA;
+﻿using ExcelToSQL.DATA;
 using ExcelToSQL.DATA.Endtities;
 using ExcelToSQL.DTO;
 using ExcelToSQL.Interface;
-using ExcelToSQL.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -79,37 +76,37 @@ namespace ExcelToSQL.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SendRepo([FromQuery] SendFilterDto filter, [FromQuery] SendType type)
+        public IActionResult SendRepo([FromQuery] SendFilterDto filter)
         {
-            List<ReturnDataDto> dataList = new List<ReturnDataDto>();
-            var datas = await _context.ExcelDatas.Where(e => e.Date <= filter.EndData && e.Date >= filter.StartData).AsQueryable().AsNoTracking().ToListAsync();
-            switch (type)
+            var dataList = new List<ReturnDataDto>();
+            var query = _context.ExcelDatas.Where(e => e.Date <= filter.EndDate && e.Date >= filter.StartDate);
+            switch (filter.SendType)
             {
                 case SendType.Segment:
-                    datas.GroupBy(d => d.Segment).Select(data => new ReturnDataDto
+                    dataList = query.GroupBy(d => d.Segment).Select(data => new ReturnDataDto
                     {
                         Name = data.Key,
-                        Count = data.Count(),
+                        Count = data.Key.Count(),
                         totalProfits = data.Sum(x => x.Profit),
                         totalDiscounts = data.Sum(x => x.Discounts),
                         totalSales = data.Sum(x => x.Sales),
                     }).ToList();
                     break;
                 case SendType.Country:
-                    datas.GroupBy(d => d.Country).Select(data => new ReturnDataDto
+                    dataList = query.GroupBy(d => d.Country).Select(data => new ReturnDataDto
                     {
                         Name = data.Key,
-                        Count = data.Count(),
+                        Count = data.Key.Count(),
                         totalProfits = data.Sum(x => x.Profit),
                         totalDiscounts = data.Sum(x => x.Discounts),
                         totalSales = data.Sum(x => x.Sales),
                     }).ToList();
                     break;
                 case SendType.Product:
-                    datas.GroupBy(d => d.Product).Select(data => new ReturnDataDto
+                    dataList = query.GroupBy(d => d.Product).Select(data => new ReturnDataDto
                     {
                         Name = data.Key,
-                        Count = data.Count(),
+                        Count = data.Key.Count(),
                         totalProfits = data.Sum(x => x.Profit),
                         totalDiscounts = data.Sum(x => x.Discounts),
                         totalSales = data.Sum(x => x.Sales),
@@ -117,20 +114,18 @@ namespace ExcelToSQL.Controllers
                     break;
                 case SendType.Discount:
                     ReturnDataDto data = new ReturnDataDto();
-                    foreach (var item in datas.OrderBy(p => p.Product).ToList())
+                    foreach (var item in query.OrderBy(p => p.Product).ToList())
                     {
+                        data.Name = "";
                         data.totalDiscounts = 1 - (item.salePrice - item.Discounts) / 100;
                         //data.totalDiscounts = 100 * (item.Discounts / item.salePrice);
-                        dataList.Add(data);
                     }
                     break;
                 default:
                     break;
             }
-
-            string fileName = Guid.NewGuid().ToString()+".xlsx";
-
-            var pathFolder = Path.Combine(_env.WebRootPath,fileName);
+            string fileName = Guid.NewGuid().ToString() + ".xlsx";
+            var pathFolder = Path.Combine(_env.WebRootPath, fileName);
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             using (var package = new ExcelPackage())
             {
@@ -147,8 +142,8 @@ namespace ExcelToSQL.Controllers
                     file.Close();
                     _service.SendEmail(filter.AccepttorEmail, "Salam", "Hesabatiniz", fileName, bytes);
                 }
-             
-                return Ok("Sended");
+
+                return Ok("Sent");
             }
 
         }

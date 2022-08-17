@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace ExcelToSQL
@@ -34,7 +35,12 @@ namespace ExcelToSQL
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers()
-            .AddFluentValidation(x => x.RegisterValidatorsFromAssemblyContaining<SendFilterDto>());
+            .AddFluentValidation(x => x.RegisterValidatorsFromAssemblyContaining<SendFilterDto>())
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                options.JsonSerializerOptions.IgnoreNullValues = true;
+            });
 
             services.AddDbContext<AppDbContext>(opt =>
             {
